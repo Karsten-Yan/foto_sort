@@ -1,110 +1,111 @@
 import os
 import glob
-from pathlib import Path
 from datetime import datetime
 import exifread
 import pandas as pd
-import seaborn as sns
-import matplotlib.pyplot as plt
+from shutil import copy2
 
-wd = os.getcwd()
+test = False
 
-unsorted_folder = os.path.join(wd, "unsorted")
+if test:
 
+    wd = os.getcwd()
+    k_dir = os.path.join(wd, "unsorted")
+    i_dir = os.path.join(wd, "fnord")
+    sortfolder = os.path.join(wd, "fotos")
+
+else:
+
+    wd = "/mnt/fritznas"
+    k_dir = os.path.join(wd, "karsten", "fotos")
+    i_dir = os.path.join(wd, "isabell", "fotos")
+    sortfolder = os.path.join(wd, "fotos")
 extension = ["jpeg", "png", "mp4", "jpg", "mov", "arw", "cr2", "m4v", "avi",
-             "webp", "mkv"]
+             "webp", "mkv", "png"]
 movie = ["mp4", "mov", "m4v", "avi", "mkv"]
 
-statistics_path = os.path.join(wd, "statistics.csv")
+statistics_path = os.path.join(sortfolder, "statistics.csv")
 
 if not os.path.exists(statistics_path):
     statistics = pd.DataFrame()
 else:
     statistics = pd.read_csv(statistics_path, index_col=0)
+
 files = []
-for filename in glob.iglob(unsorted_folder + '**/**', recursive=True):
-    files.append(filename)
-sortfolder = os.path.join(wd, "sorted")
+if os.path.exists(k_dir):
+    for filename in glob.iglob(k_dir + '**/**', recursive=True):
+        files.append(filename)
+if os.path.exists(i_dir):
+    for filename in glob.iglob(i_dir + '**/**', recursive=True):
+        files.append(filename)
+
 if not os.path.exists(sortfolder):
     os.makedirs(sortfolder)
+
 for file in files:
-    if len(file.rsplit(".", 1)) > 1 and\
-            file.rsplit(".", 1)[1].lower() in extension:
+    if os.path.isfile(file):
+        if file.rsplit(".", 1)[1].lower() in extension:
+            try:
+                with open(file, 'rb') as fh:
+                    tags = exifread.process_file(fh)
+                    cmod = tags["Image Model"].printable
+                    make = tags["Image Make"].printable
+                    dateTaken = tags["EXIF DateTimeOriginal"]
+                    ctime = datetime.strptime(dateTaken.printable,
+                                              '%Y:%m:%d %H:%M:%S')
+            except:
+                cmod = "Generic_Model"
+                make = "Generic_Make"
+                ctime = datetime.fromtimestamp(os.path.getmtime(file))
 
-        try:
-            with open(file, 'rb') as fh:
-                tags = exifread.process_file(fh)
-                cmod = tags["Image Model"].printable
-                make = tags["Image Make"].printable
-                dateTaken = tags["EXIF DateTimeOriginal"]
-                ctime = datetime.strptime(dateTaken.printable,
-                                          '%Y:%m:%d %H:%M:%S')
-        except:
-            file_info = Path(file)
-            cmod = "Generic_Model"
-            make = "Generic_Make"
-            ctime = datetime.fromtimestamp(file_info.stat().st_mtime)
+            source = make.strip().replace(" ", "_") + "_" + cmod.\
+                strip().replace(" ", "_")
 
-        source = make.strip().replace(" ", "_") + "_" + cmod.\
-            strip().replace(" ", "_")
-
-        if file.rsplit(".")[1].lower() in movie:
-            ftype = "movie"
-            source = "movie"
-        else:
-            ftype = "foto"
-
-        month = ctime.strftime("%m_%B")
-        year = ctime.strftime("%Y")
-        day = ctime.strftime("%d")
-        folder = os.path.join(sortfolder, year, month, source)
-
-        if not os.path.exists(folder):
-            os.makedirs(folder)
-
-        file_name = os.path.basename(file)
-
-        target = os.path.join(folder, file_name)
-
-        sfile = starget = os.path.getsize(file)
-        starget = 0
-        if os.path.exists(target):
-            starget = os.path.getsize(target)
-            if sfile > starget:
-                os.remove(target)
-                Path(file).rename(target)
+            if file.rsplit(".")[1].lower() in movie:
+                ftype = "movie"
+                source = "movie"
             else:
-                pass
+                ftype = "foto"
+
+            month = ctime.strftime("%m_%B")
+            year = ctime.strftime("%Y")
+            day = ctime.strftime("%d")
+            folder = os.path.join(sortfolder, year, month, source)
+
+            if not os.path.exists(folder):
+                os.makedirs(folder)
+
+            file_name = os.path.basename(file)
+
+            target = os.path.join(folder, file_name)
+
+            sfile = starget = os.path.getsize(file)
+            starget = 0
+            if os.path.exists(target):
+                starget = os.path.getsize(target)
+                if sfile > starget:
+                    os.remove(target)
+                    copy2(file, target)
+                else:
+                    continue
+            else:
+                copy2(file, target)
+
+            d = {"file_type": [ftype], "camera_maker": [make],
+                 "camera_model": [cmod], "creation_time": [ctime],
+                 "year": [year], "month": [month], "day": [day]}
+            temp_stat = pd.DataFrame(d, index=[file_name])
+            temp_stat["date"] = temp_stat["creation_time"].dt.to_period("D")
+            statistics = pd.concat([statistics, temp_stat], axis=0)
+
         else:
-            Path(file).rename(target)
+            other = os.path.join(sortfolder, "other")
 
-        temp_stat = pd.DataFrame([[ftype, make, cmod,
-                                   ctime, year, month, day]],
-                                 index=[file_name])
-        temp_stat["date"] = temp_stat[3].dt.to_period("D")
-        statistics = pd.concat([statistics, temp_stat], axis=0)
+            if not os.path.exists(other):
+                os.makedirs(other)
 
-    elif len(file.rsplit(".", 1)) > 1 and len(file.rsplit(".", 1)[1]) < 5:
-        other = os.path.join(sortfolder, "other")
-
-        if not os.path.exists(other):
-            os.makedirs(other)
-
-        target = os.path.join(other, os.path.basename(file))
-        if not os.path.exists(target):
-            Path(file).rename(target)
+            target = os.path.join(other, os.path.basename(file))
+            if not os.path.exists(target):
+                copy2(file, target)
 
 statistics.to_csv(statistics_path)
-plot_stats = statistics.copy()
-plot_stats.columns = ["file_type", "camera_maker", "camera_model",
-                      "timestamp", "year", "month", "day", "date"]
-by_day = plot_stats[plot_stats.camera_maker != "Generic_Make"].\
-    groupby(["camera_maker", "date"]).count().iloc[:, 0]
-by_day =  by_day.reset_index()
-by_day = by_day.pivot("date","camera_maker","file_type").to_timestamp()
-
-fig, ax = plt.subplots(1,1)
-sns.lineplot(data = by_day, ax=ax)
-for label in ax.get_xticklabels():
-    label.set_ha("right")
-    label.set_rotation(45)
