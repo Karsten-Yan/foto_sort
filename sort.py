@@ -20,8 +20,20 @@ else:
     k_dir = os.path.join(wd, "karsten", "fotos")
     i_dir = os.path.join(wd, "isabell", "fotos")
     sortfolder = os.path.join(wd, "fotos")
-extension = ["jpeg", "png", "mp4", "jpg", "mov", "arw", "cr2", "m4v", "avi",
-             "webp", "mkv", "png"]
+extension = [
+    "jpeg",
+    "png",
+    "mp4",
+    "jpg",
+    "mov",
+    "arw",
+    "cr2",
+    "m4v",
+    "avi",
+    "webp",
+    "mkv",
+    "png",
+]
 movie = ["mp4", "mov", "m4v", "avi", "mkv"]
 
 statistics_path = os.path.join(sortfolder, "statistics.csv")
@@ -33,10 +45,10 @@ else:
 
 files = []
 if os.path.exists(k_dir):
-    for filename in glob.iglob(k_dir + '**/**', recursive=True):
+    for filename in glob.iglob(k_dir + "**/**", recursive=True):
         files.append(filename)
 if os.path.exists(i_dir):
-    for filename in glob.iglob(i_dir + '**/**', recursive=True):
+    for filename in glob.iglob(i_dir + "**/**", recursive=True):
         files.append(filename)
 
 if not os.path.exists(sortfolder):
@@ -46,20 +58,24 @@ for file in files:
     if os.path.isfile(file):
         if file.rsplit(".", 1)[1].lower() in extension:
             try:
-                with open(file, 'rb') as fh:
+                with open(file, "rb") as fh:
                     tags = exifread.process_file(fh)
                     cmod = tags["Image Model"].printable
                     make = tags["Image Make"].printable
                     dateTaken = tags["EXIF DateTimeOriginal"]
-                    ctime = datetime.strptime(dateTaken.printable,
-                                              '%Y:%m:%d %H:%M:%S')
+                    ctime = datetime.strptime(
+                        dateTaken.printable, "%Y:%m:%d %H:%M:%S"
+                    )
             except:
                 cmod = "Generic_Model"
                 make = "Generic_Make"
                 ctime = datetime.fromtimestamp(os.path.getmtime(file))
 
-            source = make.strip().replace(" ", "_") + "_" + cmod.\
-                strip().replace(" ", "_")
+            source = (
+                make.strip().replace(" ", "_")
+                + "_"
+                + cmod.strip().replace(" ", "_")
+            )
 
             if file.rsplit(".")[1].lower() in movie:
                 ftype = "movie"
@@ -91,9 +107,15 @@ for file in files:
             else:
                 copy2(file, target)
 
-            d = {"file_type": [ftype], "camera_maker": [make],
-                 "camera_model": [cmod], "creation_time": [ctime],
-                 "year": [year], "month": [month], "day": [day]}
+            d = {
+                "file_type": [ftype],
+                "camera_maker": [make],
+                "camera_model": [cmod],
+                "creation_time": [ctime],
+                "year": [year],
+                "month": [month],
+                "day": [day],
+            }
             temp_stat = pd.DataFrame(d, index=[file_name])
             temp_stat["date"] = temp_stat["creation_time"].dt.to_period("D")
             statistics = pd.concat([statistics, temp_stat], axis=0)
