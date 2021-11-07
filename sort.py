@@ -16,7 +16,7 @@ if test:
 
 else:
 
-    wd = "/mnt/fritznas"
+    wd = "/mnt/storage"
     k_dir = os.path.join(wd, "karsten", "fotos")
     i_dir = os.path.join(wd, "isabell", "fotos")
     sortfolder = os.path.join(wd, "fotos")
