@@ -7,11 +7,17 @@ from shutil import copy2
 
 test = False
 
+def append_files(directory, file_list):
+    if os.path.exists(directory):
+    for filename in glob.iglob(directory + "**/**", recursive=True):
+        file_list.append(filename)
+
 if test:
 
     wd = os.getcwd()
     k_dir = os.path.join(wd, "unsorted")
     i_dir = os.path.join(wd, "fnord")
+    m_dir = os.path.join(wd, "gnampf")
     sortfolder = os.path.join(wd, "fotos")
 
 else:
@@ -19,6 +25,7 @@ else:
     wd = "/mnt/storage"
     k_dir = os.path.join(wd, "karsten", "fotos")
     i_dir = os.path.join(wd, "isabell", "fotos")
+    m_dir = os.path.join(wd, "manual_upload")
     sortfolder = os.path.join(wd, "fotos")
 extension = [
     "jpeg",
@@ -44,12 +51,10 @@ else:
     statistics = pd.read_csv(statistics_path, index_col=0)
 
 files = []
-if os.path.exists(k_dir):
-    for filename in glob.iglob(k_dir + "**/**", recursive=True):
-        files.append(filename)
-if os.path.exists(i_dir):
-    for filename in glob.iglob(i_dir + "**/**", recursive=True):
-        files.append(filename)
+append_files(k_dir, files)
+append_files(i_dir, files)
+append_files(m_dir, files)
+
 
 if not os.path.exists(sortfolder):
     os.makedirs(sortfolder)
