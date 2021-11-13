@@ -9,8 +9,8 @@ test = False
 
 def append_files(directory, file_list):
     if os.path.exists(directory):
-    for filename in glob.iglob(directory + "**/**", recursive=True):
-        file_list.append(filename)
+        for filename in glob.iglob(directory + "**/**", recursive=True):
+            file_list.append(filename)
 
 if test:
 
