@@ -7,10 +7,11 @@ from shutil import copy2
 
 test = False
 
-def append_files(directory, file_list):
+def append_files(directory, file_list, name_start = ""):
     if os.path.exists(directory):
         for filename in glob.iglob(directory + "**/**", recursive=True):
-            file_list.append(filename)
+            if filename.startswith(name_start):
+                file_list.append(filename)
 
 if test:
 
@@ -24,7 +25,7 @@ else:
 
     wd = "/mnt/storage"
     k_dir = os.path.join(wd, "karsten", "fotos")
-    i_dir = os.path.join(wd, "isabell", "fotos")
+    i_dir = os.path.join(wd, "nextcloud","data","isabell","files","Photos")
     m_dir = os.path.join(wd, "manual_upload")
     sortfolder = os.path.join(wd, "fotos")
 extension = [
