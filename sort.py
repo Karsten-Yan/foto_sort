@@ -4,6 +4,16 @@ from datetime import datetime
 import exifread
 import pandas as pd
 from shutil import copy2
+import requests
+from requests.auth import HTTPBasicAuth
+import json
+
+def post_to_gotify(token, message, title, url, priority=0):
+    resp = requests.post(
+         f"{url}{token}",
+        json={"message": message, "priority": priority, "title": title},
+    )
+    return resp
 
 test = False
 
@@ -44,12 +54,8 @@ extension = [
 ]
 movie = ["mp4", "mov", "m4v", "avi", "mkv"]
 
-statistics_path = os.path.join(sortfolder, "statistics.csv")
-
-if not os.path.exists(statistics_path):
-    statistics = pd.DataFrame()
-else:
-    statistics = pd.read_csv(statistics_path, index_col=0)
+with open('config.json') as f:
+    config = json.load(f)
 
 files = []
 append_files(k_dir, files)
@@ -60,6 +66,7 @@ append_files(m_dir, files)
 if not os.path.exists(sortfolder):
     os.makedirs(sortfolder)
 
+num_fotos_sorted = 0
 for file in files:
     if os.path.isfile(file):
         if file.rsplit(".", 1)[1].lower() in extension:
@@ -108,23 +115,12 @@ for file in files:
                 if sfile > starget:
                     os.remove(target)
                     copy2(file, target)
+                    num_fotos_sorted += 1
                 else:
                     continue
             else:
                 copy2(file, target)
-
-            d = {
-                "file_type": [ftype],
-                "camera_maker": [make],
-                "camera_model": [cmod],
-                "creation_time": [ctime],
-                "year": [year],
-                "month": [month],
-                "day": [day],
-            }
-            temp_stat = pd.DataFrame(d, index=[file_name])
-            temp_stat["date"] = temp_stat["creation_time"].dt.to_period("D")
-            statistics = pd.concat([statistics, temp_stat], axis=0)
+                num_fotos_sorted += 1
 
         else:
             other = os.path.join(sortfolder, "other")
@@ -136,4 +132,7 @@ for file in files:
             if not os.path.exists(target):
                 copy2(file, target)
 
-statistics.to_csv(statistics_path)
+if num_fotos_sorted > 0:
+    today = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
+    gotify_message = f"{num_fotos_sorted} were sorted at {today}"
+    resp = post_to_gotify(config["gotify_token", gotify_message, "new fotos", config["gotify_url"])
