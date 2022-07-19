@@ -54,7 +54,7 @@ extension = [
 ]
 movie = ["mp4", "mov", "m4v", "avi", "mkv"]
 
-with open('config.json') as f:
+with open('/home/pi/foto_sort/config.json') as f:
     config = json.load(f)
 
 files = []
