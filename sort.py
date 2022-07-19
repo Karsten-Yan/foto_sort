@@ -135,4 +135,4 @@ for file in files:
 if num_fotos_sorted > 0:
     today = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
     gotify_message = f"{num_fotos_sorted} were sorted at {today}"
-    resp = post_to_gotify(config["gotify_token", gotify_message, "new fotos", config["gotify_url"])
+    resp = post_to_gotify(config["gotify_token"], gotify_message, "new fotos", config["gotify_url"])
