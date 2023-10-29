@@ -8,23 +8,26 @@ import requests
 from requests.auth import HTTPBasicAuth
 import json
 
+
 def post_to_gotify(token, message, title, url, priority=0):
     resp = requests.post(
-         f"{url}{token}",
+        f"{url}{token}",
         json={"message": message, "priority": priority, "title": title},
     )
     return resp
 
+
 test = False
 
-def append_files(directory, file_list, name_start = ""):
+
+def append_files(directory, file_list, name_start=""):
     if os.path.exists(directory):
         for filename in glob.iglob(directory + "**/**", recursive=True):
             if filename.startswith(name_start):
                 file_list.append(filename)
 
-if test:
 
+if test:
     wd = os.getcwd()
     k_dir = os.path.join(wd, "unsorted")
     i_dir = os.path.join(wd, "fnord")
@@ -32,10 +35,9 @@ if test:
     sortfolder = os.path.join(wd, "fotos")
 
 else:
-
     wd = "/mnt/storage"
     k_dir = os.path.join(wd, "karsten", "fotos")
-    i_dir = os.path.join(wd, "nextcloud","data","isabell","files","Photos")
+    i_dir = os.path.join(wd, "nextcloud", "data", "isabell", "files", "Photos")
     m_dir = os.path.join(wd, "manual_upload")
     sortfolder = os.path.join(wd, "fotos")
 extension = [
@@ -51,10 +53,13 @@ extension = [
     "webp",
     "mkv",
     "png",
+    "dng",
 ]
 movie = ["mp4", "mov", "m4v", "avi", "mkv"]
 
-with open('/home/pi/foto_sort/config.json') as f:
+raw_extension = ["dng"]
+
+with open("/home/pi/foto_sort/config.json") as f:
     config = json.load(f)
 
 files = []
@@ -69,7 +74,11 @@ if not os.path.exists(sortfolder):
 num_fotos_sorted = 0
 for file in files:
     if os.path.isfile(file):
+        ext = file.rsplit(".", 1)[1].lower()
         if file.rsplit(".", 1)[1].lower() in extension:
+            raw = False
+            if ext in raw_extension:
+                raw = True
             try:
                 with open(file, "rb") as fh:
                     tags = exifread.process_file(fh)
@@ -90,7 +99,7 @@ for file in files:
                 + cmod.strip().replace(" ", "_")
             )
 
-            if file.rsplit(".")[1].lower() in movie:
+            if ext in movie:
                 ftype = "movie"
                 source = "movie"
             else:
@@ -99,7 +108,10 @@ for file in files:
             month = ctime.strftime("%m_%B")
             year = ctime.strftime("%Y")
             day = ctime.strftime("%d")
-            folder = os.path.join(sortfolder, year, month, source)
+            if raw:
+                folder = os.path.join(sortfolder, year, month, source, "raw")
+            else:
+                folder = os.path.join(sortfolder, year, month, source)
 
             if not os.path.exists(folder):
                 os.makedirs(folder)
@@ -133,6 +145,11 @@ for file in files:
                 copy2(file, target)
 
 if num_fotos_sorted > 0:
-    today = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
+    today = datetime.today().strftime("%Y-%m-%d %H:%M:%S")
     gotify_message = f"{num_fotos_sorted} were sorted at {today}"
-    resp = post_to_gotify(config["gotify_token"], gotify_message, "new fotos", config["gotify_url"])
+    resp = post_to_gotify(
+        config["gotify_token"],
+        gotify_message,
+        "new fotos",
+        config["gotify_url"],
+    )
