@@ -109,7 +109,7 @@ for file in files:
             year = ctime.strftime("%Y")
             day = ctime.strftime("%d")
             if raw:
-                folder = os.path.join(sortfolder, year, month, source, "raw")
+                folder = os.path.join(sortfolder, year, month, source, "raw_fotos")
             else:
                 folder = os.path.join(sortfolder, year, month, source)
 
